@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="内視鏡QI">
+<meta name="theme-color" content="#1050a0">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>大腸内視鏡 QI アプリ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1050a0;
+    --primary-dark: #0a2e6e;
+    --primary-light: #e8f0fc;
+    --accent: #00b4a0;
+    --accent2: #f07030;
+    --danger: #d03030;
+    --purple: #7040b0;
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --text: #0a1a2e;
+    --muted: #6b7a96;
+    --border: #dce4f0;
+    --radius: 16px;
+    --shadow: 0 2px 16px rgba(10,30,80,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    padding: 48px 20px 16px;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .header-sub { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #90b8e8; font-weight: 700; }
+  .header-title { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; margin-top: 2px; }
+  .total-badge {
+    display: inline-block; background: rgba(255,255,255,0.15);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 12px; font-weight: 700; margin-top: 4px;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 200;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 4px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    border: none; background: transparent; cursor: pointer;
+    font-family: inherit;
+  }
+  .nav-btn .nav-icon { font-size: 22px; transition: transform 0.2s; }
+  .nav-btn .nav-label { font-size: 10px; font-weight: 700; color: var(--muted); }
+  .nav-btn.active .nav-label { color: var(--primary); }
+  .nav-btn.active .nav-icon { transform: scale(1.15); }
+
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 800; color: var(--primary);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary-light);
+  }
+
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-card {
+    background: var(--card); border-radius: 14px;
+    padding: 14px 12px; box-shadow: var(--shadow);
+    border-top: 3px solid var(--primary);
+  }
+  .kpi-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .kpi-value { font-size: 28px; font-weight: 900; color: var(--text); line-height: 1.1; margin: 2px 0; }
+  .kpi-sub { font-size: 10px; color: var(--muted); }
+  .kpi-bench { font-size: 10px; color: #aab5c8; margin-top: 4px; }
+  .kpi-card.accent { border-top-color: var(--accent); }
+  .kpi-card.orange { border-top-color: var(--accent2); }
+  .kpi-card.red { border-top-color: var(--danger); }
+  .kpi-card.purple { border-top-color: var(--purple); }
+  .kpi-wide { grid-column: 1 / -1; border-top-color: var(--accent2); }
+
+  .perf-panel {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border-radius: var(--radius); padding: 18px 16px;
+    color: white; margin-bottom: 14px;
+  }
+  .perf-title { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; opacity: 0.9; }
+  .perf-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .perf-row:last-child { margin-bottom: 0; }
+  .perf-name { font-size: 13px; opacity: 0.8; }
+  .perf-right { display: flex; align-items: center; gap: 8px; }
+  .perf-val { font-size: 20px; font-weight: 900; }
+  .badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; }
+  .badge.ok { background: rgba(0,180,160,0.25); color: #00e8c8; }
+  .badge.ng { background: rgba(208,48,48,0.25); color: #ff8080; }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar-label { width: 72px; font-size: 11px; color: var(--muted); text-align: right; flex-shrink: 0; line-height: 1.3; }
+  .bar-track { flex: 1; background: var(--bg); border-radius: 6px; height: 20px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 7px; transition: width 0.6s ease; }
+  .bar-fill span { font-size: 11px; font-weight: 700; color: white; white-space: nowrap; }
+
+  .filter-bar { display: flex; gap: 6px; overflow-x: auto; padding: 2px; margin-bottom: 14px; scrollbar-width: none; }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    flex-shrink: 0; padding: 7px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: white;
+    font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 6px; }
+  .form-control {
+    width: 100%; padding: 13px 14px;
+    border: 2px solid var(--border); border-radius: 12px;
+    font-size: 15px; font-family: inherit; color: var(--text);
+    background: white; appearance: none; -webkit-appearance: none;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-control:focus { border-color: var(--primary); }
+  .form-control:disabled { background: var(--bg); color: var(--muted); }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .toggle-btn {
+    flex: 1; min-width: 60px; padding: 11px 6px;
+    border: 2px solid var(--border); border-radius: 10px;
+    background: white; font-size: 13px; font-weight: 700;
+    color: var(--muted); cursor: pointer; font-family: inherit;
+    text-align: center; transition: all 0.15s;
+  }
+  .toggle-btn.selected { background: var(--primary); border-color: var(--primary); color: white; }
+  .toggle-btn.selected.green { background: var(--accent); border-color: var(--accent); }
+  .toggle-btn.selected.red { background: var(--danger); border-color: var(--danger); }
+  .toggle-btn.selected.orange { background: var(--accent2); border-color: var(--accent2); }
+
+  .submit-btn {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white; border: none; border-radius: 14px;
+    font-size: 16px; font-weight: 900; font-family: inherit;
+    cursor: pointer; margin-top: 8px;
+    box-shadow: 0 6px 20px rgba(16,80,160,0.35);
+  }
+
+  .success-screen { text-align: center; padding: 50px 20px; display: none; }
+  .success-screen.show { display: block; }
+  .success-icon { font-size: 70px; animation: pop 0.4s ease; }
+  @keyframes pop { 0%{transform:scale(0)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  .success-title { font-size: 22px; font-weight: 900; color: var(--accent); margin-top: 16px; }
+
+  .case-item {
+    background: var(--card); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px;
+    box-shadow: var(--shadow);
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 10px; align-items: center;
+  }
+  .case-num { font-size: 11px; color: var(--muted); font-weight: 700; text-align: center; }
+  .case-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .case-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .empty-state { text-align: center; padding: 60px 20px; }
+  .empty-icon { font-size: 60px; }
+  .empty-text { font-size: 17px; font-weight: 700; color: var(--text); margin-top: 14px; }
+  .empty-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .empty-btn {
+    margin-top: 20px; padding: 12px 28px;
+    background: var(--primary); color: white; border: none;
+    border-radius: 12px; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+
+  /* PWAインストール促進バナー */
+  #installBanner {
+    display: none;
+    background: linear-gradient(135deg, #00b4a0, #007a6e);
+    color: white; padding: 12px 16px;
+    align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 700;
+  }
+  #installBanner.show { display: flex; }
+  #installBanner button {
+    margin-left: auto; flex-shrink: 0;
+    padding: 7px 14px; border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 8px; background: transparent; color: white;
+    font-weight: 800; font-size: 12px; font-family: inherit; cursor: pointer;
+  }
+  #installBanner .close-btn {
+    border: none; padding: 4px 8px; opacity: 0.7; margin-left: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- PWAインストールバナー -->
+<div id="installBanner">
+  <span>📲 ホーム画面に追加できます</span>
+  <button onclick="installApp()">インストール</button>
+  <button class="close-btn" onclick="document.getElementById('installBanner').classList.remove('show')">✕</button>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-sub">Colonoscopy Quality Indicator</div>
+  <div class="header-title">大腸内視鏡 パフォーマンス</div>
+  <div class="total-badge" id="headerCount">0 症例</div>
+</div>
+
+<!-- PAGE: DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div style="padding-top:14px;">
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-chip active" onclick="setFilter('all',this)">すべて</button>
+      <button class="filter-chip" onclick="setFilter('screening',this)">スクリーニング</button>
+      <button class="filter-chip" onclick="setFilter('fob',this)">便潜血陽性</button>
+      <button class="filter-chip" onclick="setFilter('symptomatic',this)">有症状</button>
+      <button class="filter-chip" onclick="setFilter('other',this)">その他</button>
+    </div>
+  </div>
+  <div id="dashboardContent"></div>
+</div>
+
+<!-- PAGE: INPUT -->
+<div class="page" id="page-input">
+  <div style="height:14px;"></div>
+  <div id="successScreen" class="success-screen">
+    <div class="success-icon">✅</div>
+    <div class="success-title">登録完了！</div>
+    <div style="color:var(--muted);margin-top:8px;font-size:14px;">ダッシュボードを更新しました</div>
+  </div>
+
+  <form id="caseForm" onsubmit="return false;">
+    <div class="card">
+      <div class="section-title">① 患者情報</div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">性別</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn" onclick="selectToggle('gender','male',this)">男性</button>
+            <button type="button" class="toggle-btn" onclick="selectToggle('gender','female',this)">女性</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">年齢</label>
+          <input type="number" class="form-control" id="f-age" placeholder="例: 65" min="1" max="120">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">腹部手術歴</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn selected green" id="btn-surgery-none" onclick="selectToggle('abdominalSurgery','none',this)">なし</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('abdominalSurgery','yes',this)">あり</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">体型</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" onclick="selectToggle('bodyType','thin',this)">痩せ型</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('bodyType','normal',this)">ふつう</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('bodyType','obese',this)">肥満</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">② 検査成績</div>
+      <div class="form-group">
+        <label class="form-label">盲腸到達</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" onclick="selectToggle('cecumReached','yes',this,'green');toggleCecumTime(true)">✓ 成功</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('cecumReached','no',this,'red');toggleCecumTime(false)">✗ 失敗</button>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">盲腸挿入時間（分）</label>
+          <input type="number" class="form-control" id="f-cecumTime" placeholder="例: 7.5" step="0.1" min="0" disabled>
+        </div>
+        <div class="form-group">
+          <label class="form-label">抜去時間（分）</label>
+          <input type="number" class="form-control" id="f-withdrawalTime" placeholder="例: 8.0" step="0.1" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">③ 発見病変</div>
+      <div class="form-group">
+        <label class="form-label">腺腫または癌</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" onclick="selectToggle('adenomaFound','yes',this,'orange')">🔴 あり</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('adenomaFound','no',this)">なし</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SSL（鋸歯状病変）</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" onclick="selectToggle('sslFound','yes',this,'orange')">🟡 あり</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('sslFound','no',this)">なし</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">④ その他</div>
+      <div class="form-group">
+        <label class="form-label">患者の痛み</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" onclick="selectToggle('patientPain','none',this,'green')">無し</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('patientPain','mild',this)">軽度</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('patientPain','moderate',this,'orange')">中等度</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('patientPain','severe',this,'red')">重度</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">検査目的</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" onclick="selectToggle('purpose','screening',this)">検診</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('purpose','fob',this)">便潜血+</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('purpose','symptomatic',this)">有症状</button>
+          <button type="button" class="toggle-btn" onclick="selectToggle('purpose','other',this)">その他</button>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="submit-btn" onclick="submitCase()">この症例を登録する →</button>
+    <div style="height:8px;"></div>
+  </form>
+</div>
+
+<!-- PAGE: LIST -->
+<div class="page" id="page-list">
+  <div style="height:14px;"></div>
+  <div id="caseListContent"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('dashboard',this)" id="nav-dashboard">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">ダッシュボード</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('input',this)" id="nav-input">
+    <span class="nav-icon">➕</span>
+    <span class="nav-label">症例入力</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('list',this)" id="nav-list">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">一覧</span>
+  </button>
+</div>
+
+<script>
+// ======== PWA ========
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ======== DATA ========
+const STORAGE_KEY = 'colono_cases_v2';
+let cases = [];
+let filterCurrent = 'all';
+let formData = { abdominalSurgery: 'none' };
+
+function loadCases() {
+  try { cases = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { cases = []; }
+}
+function saveCases() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+}
+
+// ======== NAV ========
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'list') renderList();
+}
+
+// ======== FORM ========
+function selectToggle(field, value, btn, color) {
+  formData[field] = value;
+  btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => {
+    b.classList.remove('selected','green','red','orange');
+  });
+  btn.classList.add('selected');
+  if (color) btn.classList.add(color);
+}
+
+function toggleCecumTime(enable) {
+  const el = document.getElementById('f-cecumTime');
+  el.disabled = !enable;
+  if (!enable) el.value = '';
+}
+
+function resetForm() {
+  formData = { abdominalSurgery: 'none' };
+  document.getElementById('caseForm').querySelectorAll('.toggle-btn').forEach(b => {
+    b.classList.remove('selected','green','red','orange');
+  });
+  document.getElementById('f-age').value = '';
+  document.getElementById('f-cecumTime').value = '';
+  document.getElementById('f-withdrawalTime').value = '';
+  document.getElementById('f-cecumTime').disabled = true;
+  const noneBtn = document.getElementById('btn-surgery-none');
+  if (noneBtn) noneBtn.classList.add('selected','green');
+}
+
+function submitCase() {
+  const required = ['gender','abdominalSurgery','bodyType','cecumReached','adenomaFound','sslFound','patientPain','purpose'];
+  for (const k of required) {
+    if (!formData[k]) { alert('すべての項目を選択してください'); return; }
+  }
+  const age = document.getElementById('f-age').value;
+  const withdrawalTime = document.getElementById('f-withdrawalTime').value;
+  const cecumTime = document.getElementById('f-cecumTime').value;
+  if (!age) { alert('年齢を入力してください'); return; }
+  if (!withdrawalTime) { alert('抜去時間を入力してください'); return; }
+  if (formData.cecumReached === 'yes' && !cecumTime) { alert('盲腸挿入時間を入力してください'); return; }
+
+  cases.unshift({
+    ...formData,
+    age: parseInt(age),
+    cecumTime: cecumTime ? parseFloat(cecumTime) : null,
+    withdrawalTime: parseFloat(withdrawalTime),
+    id: Date.now(),
+    date: new Date().toLocaleDateString('ja-JP'),
+  });
+  saveCases();
+  updateHeaderCount();
+
+  document.getElementById('caseForm').style.display = 'none';
+  const suc = document.getElementById('successScreen');
+  suc.classList.add('show');
+  setTimeout(() => {
+    suc.classList.remove('show');
+    document.getElementById('caseForm').style.display = 'block';
+    resetForm();
+    showPage('dashboard', document.getElementById('nav-dashboard'));
+    document.getElementById('nav-dashboard').classList.add('active');
+  }, 1600);
+}
+
+// ======== DASHBOARD ========
+function setFilter(val, btn) {
+  filterCurrent = val;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderDashboard();
+}
+
+function getFiltered() {
+  return filterCurrent === 'all' ? cases : cases.filter(c => c.purpose === filterCurrent);
+}
+
+function pct(a,b) { return b===0 ? '—' : (a/b*100).toFixed(1)+'%'; }
+function avg(arr) { return arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : null; }
+
+function bar(val, max, color) {
+  const w = max > 0 ? Math.round(val/max*100) : 0;
+  return `<div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"><span>${val>0?val:''}</span></div></div>`;
+}
+
+function perfBadge(val, thresh, reverse) {
+  const ok = reverse ? parseFloat(val) >= thresh : parseFloat(val) >= thresh;
+  return `<span class="badge ${ok?'ok':'ng'}">${ok?'✓ 達成':'要改善'}</span>`;
+}
+
+function renderDashboard() {
+  const fc = getFiltered();
+  const n = fc.length;
+  const el = document.getElementById('dashboardContent');
+
+  if (n === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔭</div>
+      <div class="empty-text">まだデータがありません</div>
+      <div class="empty-sub">症例入力から最初の検査を登録してください</div>
+      <button class="empty-btn" onclick="showPage('input',document.getElementById('nav-input'));document.getElementById('nav-input').classList.add('active')">症例を入力する →</button>
+    </div>`;
+    return;
+  }
+
+  const cecumOk = fc.filter(c=>c.cecumReached==='yes').length;
+  const adenoma = fc.filter(c=>c.adenomaFound==='yes').length;
+  const ssl = fc.filter(c=>c.sslFound==='yes').length;
+  const cecumTimes = fc.filter(c=>c.cecumReached==='yes'&&c.cecumTime).map(c=>c.cecumTime);
+  const wdTimes = fc.filter(c=>c.withdrawalTime).map(c=>c.withdrawalTime);
+  const avgCecum = avg(cecumTimes);
+  const avgWd = avg(wdTimes);
+  const cecumRate = (cecumOk/n*100).toFixed(1);
+  const adrRate = (adenoma/n*100).toFixed(1);
+  const sslRate = (ssl/n*100).toFixed(1);
+
+  const purposeMap = {screening:'スクリーニング',fob:'便潜血陽性',symptomatic:'有症状',other:'その他'};
+  const painMap = {none:'無し',mild:'軽度',moderate:'中等度',severe:'重度'};
+  const maxP = Math.max(...Object.keys(purposeMap).map(k=>fc.filter(c=>c.purpose===k).length),1);
+  const maxPa = Math.max(...Object.keys(painMap).map(k=>fc.filter(c=>c.patientPain===k).length),1);
+
+  el.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">盲腸到達率</div>
+        <div class="kpi-value">${cecumRate}%</div>
+        <div class="kpi-sub">${cecumOk}/${n}件</div>
+        <div class="kpi-bench">🎯 目標 ≥95%</div>
+      </div>
+      <div class="kpi-card accent">
+        <div class="kpi-label">腺腫発見率 ADR</div>
+        <div class="kpi-value">${adrRate}%</div>
+        <div class="kpi-sub">${adenoma}/${n}件</div>
+        <div class="kpi-bench">🎯 目標 ≥25%</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">SSL発見率</div>
+        <div class="kpi-value">${sslRate}%</div>
+        <div class="kpi-sub">${ssl}/${n}件</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">平均挿入時間</div>
+        <div class="kpi-value">${avgCecum?avgCecum+'分':'—'}</div>
+        <div class="kpi-sub">到達成功症例</div>
+        <div class="kpi-bench">🎯 目標 ≤10分</div>
+      </div>
+      <div class="kpi-card red kpi-wide">
+        <div class="kpi-label">平均抜去時間</div>
+        <div class="kpi-value">${avgWd?avgWd+'分':'—'}</div>
+        <div class="kpi-sub">全症例平均　　🎯 目標 ≥6分</div>
+      </div>
+    </div>
+
+    <div class="perf-panel">
+      <div class="perf-title">🏆 ガイドライン達成状況</div>
+      <div class="perf-row">
+        <span class="perf-name">盲腸到達率</span>
+        <div class="perf-right"><span class="perf-val">${cecumRate}%</span>${perfBadge(cecumRate,95)}</div>
+      </div>
+      <div class="perf-row">
+        <span class="perf-name">腺腫発見率 (ADR)</span>
+        <div class="perf-right"><span class="perf-val">${adrRate}%</span>${perfBadge(adrRate,25)}</div>
+      </div>
+      <div class="perf-row">
+        <span class="perf-name">平均抜去時間</span>
+        <div class="perf-right"><span class="perf-val">${avgWd?avgWd+'分':'—'}</span>${avgWd?perfBadge(avgWd,6,true):'<span class="badge ng">データなし</span>'}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">検査目的の内訳</div>
+      ${Object.entries(purposeMap).map(([k,label])=>{
+        const cnt=fc.filter(c=>c.purpose===k).length;
+        return `<div class="bar-row"><div class="bar-label">${label}</div>${bar(cnt,maxP,'#1050a0')}</div>`;
+      }).join('')}
+    </div>
+
+    <div class="card">
+      <div class="section-title">患者の痛みの分布</div>
+      ${Object.entries(painMap).map(([k,label])=>{
+        const cnt=fc.filter(c=>c.patientPain===k).length;
+        const colors={none:'#00b4a0',mild:'#60a030',moderate:'#f07030',severe:'#d03030'};
+        return `<div class="bar-row"><div class="bar-label">${label}</div>${bar(cnt,maxPa,colors[k])}</div>`;
+      }).join('')}
+    </div>
+
+    <div class="card">
+      <div class="section-title">目的別 腺腫発見率 (%)</div>
+      ${Object.entries(purposeMap).map(([k,label])=>{
+        const grp=fc.filter(c=>c.purpose===k);
+        const adr=grp.length?Math.round(grp.filter(c=>c.adenomaFound==='yes').length/grp.length*100):0;
+        return `<div class="bar-row"><div class="bar-label">${label}<br><span style="font-size:9px">(${grp.length}件)</span></div>${bar(adr,100,'#00b4a0')}</div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ======== LIST ========
+function renderList() {
+  const el = document.getElementById('caseListContent');
+  if (cases.length===0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">症例データなし</div></div>`;
+    return;
+  }
+  const pL={screening:'スクリーニング',fob:'便潜血陽性',symptomatic:'有症状',other:'その他'};
+  const paL={none:'無し',mild:'軽度',moderate:'中等度',severe:'重度'};
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div style="font-size:14px;font-weight:700;color:var(--muted);">計 ${cases.length} 症例</div>
+    <button onclick="if(confirm('全データを削除しますか？')){cases=[];saveCases();renderList();updateHeaderCount();renderDashboard();}"
+      style="padding:6px 12px;border:1.5px solid var(--danger);border-radius:8px;background:white;color:var(--danger);font-weight:700;font-size:12px;font-family:inherit;cursor:pointer;">全削除</button>
+  </div>`;
+  cases.forEach((c,i)=>{
+    html+=`<div class="case-item">
+      <div style="text-align:center;">
+        <div style="font-size:22px;">${c.cecumReached==='yes'?'✅':'❌'}</div>
+        <div class="case-num">#${cases.length-i}</div>
+      </div>
+      <div>
+        <div class="case-title">${c.gender==='male'?'男':'女'}性 ${c.age}歳 ／ ${pL[c.purpose]||c.purpose}</div>
+        <div class="case-detail">挿入${c.cecumTime||'—'}分 → 抜去${c.withdrawalTime}分 ／ 痛み:${paL[c.patientPain]}</div>
+        <div class="case-detail">${c.adenomaFound==='yes'?'🔴腺腫+ ':' '}${c.sslFound==='yes'?'🟡SSL+ ':' '}${c.date}</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function updateHeaderCount() {
+  document.getElementById('headerCount').textContent = cases.length+' 症例';
+}
+
+// INIT
+loadCases();
+updateHeaderCount();
+renderDashboard();
+</script>
+</body>
+</html>
